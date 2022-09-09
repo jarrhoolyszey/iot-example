@@ -76,6 +76,7 @@ int TagoClient::GetMotorAngle() {
   return angle;
 }
 
+
 /* DHT Device Methods */
 DHT_Device::DHT_Device(uint8_t pin, uint8_t type, String token):
   DHT(pin, type),

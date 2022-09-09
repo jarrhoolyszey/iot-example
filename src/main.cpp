@@ -1,55 +1,42 @@
 #include <Arduino.h>
 #include <IOTExample.h>
 #include <Tago.h>
-#include <Servo.h>
+#include <neotimer.h>
 
-DHT_Device dht22(DHT_PIN, DHT_TYPE, ESP8266_TOKEN);
 TagoClient tago;
+DHT_Device dht22(DHT_PIN, DHT_TYPE, ESP8266_TOKEN);
 Servo servo;
-uint16_t sg90_min = 500;
-uint16_t sg90_max = 2300;
 
-unsigned long tago_request_interval = 60 * 1000; // 60s
-unsigned long tago_last_request = 0;
-
-unsigned long servo_request_interval = 3 * 1000;
-unsigned long servo_last_request = 0; 
+Neotimer DHT_Timer(DHT_REQUEST_INTERVAL);
+Neotimer Servo_Timer(SERVO_REQUEST_INTERVAL);
 
 
 void setup() {
-  servo.attach(13, sg90_min, sg90_max);
-
   setupSerial();
   setupWiFi();
-
+  setupReedSwitch();
+  servo.attach(SERVO_PIN, SERVO_MIN, SERVO_MAX);
+  
   dht22.begin();
 }
 
 void loop() {
-  if(millis() - tago_last_request > tago_request_interval) {
+  // Send DHT data to Tago.io
+  if(DHT_Timer.repeat()) {
     tago.SendData(dht22);
-    tago_last_request = millis();
   }
 
-  if(millis() - servo_last_request > servo_request_interval) {
+  // Check servo positioning
+  if(Servo_Timer.repeat()) {
     int angle = tago.GetMotorAngle();
 
     if(angle >= 0 && angle <= 180 && angle != servo.read()) {
       servo.write(angle);
     }
+  }
 
-    servo_last_request = millis();
-  }  
-      
-    
-
-    
-  
-
-  // servo.write(sg90_min);
-  // delay(2000);
-  // servo.write(1300);
-  // delay(2000);
-  // servo.write(sg90_max);
-  // delay(2000);
+  // Check reed switch status
+  if(reed_changed) {
+    reedSwitchHandler();
+  }
 }
